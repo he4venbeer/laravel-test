@@ -5,6 +5,7 @@ namespace App\Modules\Property\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Property\Repos\PropertyRepo;
 use App\Modules\Property\Services\PropertyService;
+use App\Modules\Property\Validations\PropertyValidation;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class PropertyController extends Controller
     public function __construct(
         protected PropertyRepo $propertyRepo,
         protected PropertyService $propertyService,
+        protected PropertyValidation $propertyValidation,
     ) {
     }
 
@@ -47,18 +49,9 @@ class PropertyController extends Controller
      */
     public function create(Request $request): JsonResponse
     {
-        // Todo - need to implement global validator
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string',
-            'address' => 'required|string',
-            'owner_id' => 'required|integer|exists:owners,id',
-        ]);
+        $data = $this->propertyValidation->validateRequest($request, 'create');
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors());
-        }
-
-        $property = $this->propertyService->create($request->all());
+        $property = $this->propertyService->create($data);
 
         return response()->json(['Property created successfully', $property]);
     }
