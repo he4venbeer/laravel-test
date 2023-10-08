@@ -9,7 +9,7 @@ use App\Modules\Property\Validations\PropertyValidation;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\Response;
 
 class PropertyController extends Controller
 {
@@ -27,8 +27,8 @@ class PropertyController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // Todo - need to implement response handler and resource
-        return response()->json(['success', $this->propertyRepo->list()]);
+        // Todo - need to implement resource
+        return appResponse($request, [$this->propertyRepo->list()]);
     }
 
     /**
@@ -39,7 +39,7 @@ class PropertyController extends Controller
     {
         $property = $this->propertyRepo->findById($request->id);
 
-        return response()->json(['success', $property]);
+        return appResponse($request, [$property]);
     }
 
     /**
@@ -53,7 +53,7 @@ class PropertyController extends Controller
 
         $property = $this->propertyService->create($data);
 
-        return response()->json(['Property created successfully', $property]);
+        return appResponse($request, [$property]);
     }
 
     /**
@@ -65,7 +65,7 @@ class PropertyController extends Controller
         $propertyId = $request->id;
         $soldProperty = $this->propertyRepo->sell($propertyId);
 
-        return response()->json(['Property is sold', $soldProperty]);
+        return appResponse($request, [$soldProperty]);
     }
 
     /**
@@ -74,9 +74,8 @@ class PropertyController extends Controller
      */
     public function delete(int $id): JsonResponse
     {
-        // $propertyId = $request->id;
         $this->propertyRepo->deleteById($id);
 
-        return response()->json(['Property deleted']);
+        return appResponse(Request(), [], Response::HTTP_NO_CONTENT);
     }
 }
