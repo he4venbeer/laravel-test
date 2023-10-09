@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResponseMapper
@@ -46,10 +47,7 @@ class ResponseMapper
 
             // Handle not found supported types
             if (is_null($type)) {
-                return $this->createResponseForType('*', [
-                    'message' => 'Accept header is not supported',
-                    'code' => Response::HTTP_NOT_ACCEPTABLE
-                ], Response::HTTP_NOT_ACCEPTABLE);
+                return $this->createNotSupportResponse($request, $headers);
             }
 
         } else {
@@ -57,7 +55,7 @@ class ResponseMapper
             $type = '*';
         }
 
-        return $this->createResponseForType($type, $data, $code, $headers);
+        return $this->createResponseForType($request, $type, $data, $code, $headers);
     }
 
     /**
@@ -116,6 +114,7 @@ class ResponseMapper
     }
 
     /**
+     * @param Request $request
      * @param string $acceptType
      * @param mixed $data
      * @param int $code
@@ -123,6 +122,7 @@ class ResponseMapper
      * @return JsonResponse
      */
     public function createResponseForType(
+        Request $request,
         string $acceptType,
         mixed $data,
         int $code,
@@ -130,17 +130,51 @@ class ResponseMapper
     ): JsonResponse {
         $mapFunction = self::ACCEPT_TYPE_FUNCTION_MAP[$acceptType];
 
-        return $this->$mapFunction($data, $code, $headers);
+        return $this->$mapFunction($request, $data, $code, $headers);
     }
 
     /**
+     * @param Request $request
      * @param mixed $data
      * @param int $code
      * @param array $headers
      * @return JsonResponse
      */
-    public function createJsonResponse(mixed $data, int $code, array $headers = []): JsonResponse
+    public function createJsonResponse(Request $request, mixed $data, int $code, array $headers = []): JsonResponse
     {
-        return response()->json($data, self::httpResponseCode($code), $headers);
+        return $data
+            ->additional($this->metaData($request))
+            ->toResponse($request)
+            ->setStatusCode($code)
+            ->withHeaders($headers);
+    }
+
+    /**
+     * @param Request $request
+     * @param array $headers
+     * @return JsonResponse
+     */
+    public function createNotSupportResponse(Request $request, array $headers = []): JsonResponse
+    {
+        return response()->json(
+            array_merge([
+                'message' => 'Accept header is not supported',
+                'code' => Response::HTTP_NOT_ACCEPTABLE
+            ], $this->metaData($request)),
+            Response::HTTP_NOT_ACCEPTABLE,
+            $headers
+        );
+    }
+
+    /**
+     * @param Request $request
+     * @return array
+     */
+    private function metaData(Request $request): array
+    {
+        return [
+            'meta' => [],
+            'link' => $request->url()
+        ];
     }
 }

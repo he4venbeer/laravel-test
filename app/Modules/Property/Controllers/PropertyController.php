@@ -3,6 +3,7 @@
 namespace App\Modules\Property\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Property\Http\Resources\PropertyResource;
 use App\Modules\Property\Repos\PropertyRepo;
 use App\Modules\Property\Services\PropertyService;
 use App\Modules\Property\Validations\PropertyValidation;
@@ -27,8 +28,10 @@ class PropertyController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // Todo - need to implement resource
-        return appResponse($request, [$this->propertyRepo->list()]);
+        $properties = $this->propertyRepo->list();
+        $response = PropertyResource::collection($properties);
+
+        return appResponse($request, $response);
     }
 
     /**
@@ -38,8 +41,9 @@ class PropertyController extends Controller
     public function view(Request $request): JsonResponse
     {
         $property = $this->propertyRepo->findById($request->id);
+        $response = new PropertyResource($property);
 
-        return appResponse($request, [$property]);
+        return appResponse($request, $response);
     }
 
     /**
@@ -52,8 +56,9 @@ class PropertyController extends Controller
         $data = $this->propertyValidation->validateRequest($request, 'create');
 
         $property = $this->propertyService->create($data);
+        $response = new PropertyResource($property);
 
-        return appResponse($request, [$property]);
+        return appResponse($request, $response);
     }
 
     /**
@@ -64,8 +69,9 @@ class PropertyController extends Controller
     {
         $propertyId = $request->id;
         $soldProperty = $this->propertyRepo->sell($propertyId);
+        $response = new PropertyResource($soldProperty);
 
-        return appResponse($request, [$soldProperty]);
+        return appResponse($request, $response);
     }
 
     /**
