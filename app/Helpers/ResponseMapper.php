@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Symfony\Component\HttpFoundation\Response;
+use function PHPUnit\Framework\isInstanceOf;
 
 class ResponseMapper
 {
@@ -142,11 +143,21 @@ class ResponseMapper
      */
     public function createJsonResponse(Request $request, mixed $data, int $code, array $headers = []): JsonResponse
     {
-        return $data
-            ->additional($this->metaData($request))
-            ->toResponse($request)
-            ->setStatusCode($code)
-            ->withHeaders($headers);
+        // Return resource response
+        if ($data instanceof JsonResource) {
+            return $data
+                ->additional($this->metaData($request))
+                ->toResponse($request)
+                ->setStatusCode($code)
+                ->withHeaders($headers);
+        }
+
+        // Normal response
+        return response()->json(
+            array_merge($data, $this->metaData($request)),
+            $code,
+            $headers
+        );
     }
 
     /**
